@@ -1,43 +1,41 @@
+import unittest
 from unittest import TestCase, main
-from pyamaze import maze # type: ignore
-
-
-class Node:
-    def __init__(self, neighboors:list=[]):
-        self.neighboors = neighboors
-
-
-class Graph:
-    @classmethod
-    def from_maze_map(cls, maze_map:dict):
-        instance = cls()
-        instance.head = Node()
-        return instance
-
-    def get_head(self) -> Node:
-        return self.head
-
+from pyamaze import maze
+from typing import cast
+from labyrinth_solver import LabyrinthSolver, Node
 
 class LabyrinthTest(TestCase):
-    
-    def setUp(self):
+    def setUp(self) -> None:
         self.m = maze()
-        self.m.CreateMaze()
+        self.labyrinth_solver = LabyrinthSolver(self.m)
 
-    def test_labyrinth_is_created(self):
-        self.assertTrue(self.m)
+    def test_create_labyrinth(self) -> None:
+        self.assertTrue(self.labyrinth_solver.labyrinth)
     
-    def test_extract_labyrinth_as_dict(self):
-        self.assertIsInstance(self.m.maze_map, dict)
+    def test_open_set_should_exist(self) -> None:
+        self.assertEqual(self.labyrinth_solver.open_set, [])
     
-    def test_create_node_out_of_a_maze_map_entry(self):
-        self.assertTrue(True)
+    def test_closed_set_should_exist(self) -> None:
+        self.assertEqual(self.labyrinth_solver.closed_set, [])
+    
+    def test_h_cost_from_starting_node_should_be_rows_plus_cols(self) -> None:
+        expected_h = self.m.cols + self.m.rows
+        starting_node:Node = self.labyrinth_solver.get_start_node()
 
-    def test_from_labyrinth_maze_map_create_a_graph(self):
-        labyrinth_graph:Graph = Graph.from_maze_map(self.m.maze_map)
-        self.assertIsInstance(labyrinth_graph.get_head(), Node)
-        self.assertIsInstance(labyrinth_graph.get_head().neighboors, list)
-        
+        self.assertEqual(starting_node.get_h_cost(), expected_h)
+    
+    def test_g_cost_from_starting_node_should_be_zero(self) -> None:
+        starting_node:Node = self.labyrinth_solver.get_start_node()
 
-if __name__ == '__main__':
-    main()
+        self.assertEqual(starting_node.get_g_cost(), 0)
+    
+    def test_when_expanding_start_node_should_give_its_neighboors(self)\
+    -> None:
+        self.m.maze_map[self.m.cols,self.m.rows] = {
+            'N': 0, 'S': 0, 'E': 0, 'W': 1 }
+        expected_neighboors_pos = [(self.m.cols, self.m.rows - 1)]
+
+        self.assertEqual(
+            self.labyrinth_solver.expand_node(
+                self.labyrinth_solver.get_start_node())[0].pos,
+            expected_neighboors_pos[0] ) 
